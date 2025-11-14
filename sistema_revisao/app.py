@@ -10,7 +10,8 @@ app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'  # Alterar em produção
 
 # Conexão com o banco
-conn = sqlite3.connect('revisao_estudos.db', check_same_thread=False)
+DB_PATH = os.getenv('DATABASE_PATH', 'revisao_estudos.db')
+conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 
 # Tabela de usuários
