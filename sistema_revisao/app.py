@@ -4,14 +4,12 @@ import hashlib
 import io
 import csv
 import json
-import os
 from datetime import datetime, timedelta 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'  # Alterar em produção
 
 # Conexão com o banco
-DB_PATH = os.getenv('DATABASE_PATH', 'revisao_estudos.db')
-conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+conn = sqlite3.connect('revisao_estudos.db', check_same_thread=False)
 cursor = conn.cursor()
 
 # Tabela de usuários
@@ -930,5 +928,4 @@ def listar_usuarios():
     return jsonify(usuarios_formatados)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True)

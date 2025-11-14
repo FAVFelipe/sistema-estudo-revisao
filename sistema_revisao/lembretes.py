@@ -100,7 +100,6 @@ class SistemaLembretes:
                 # Criar mensagem de lembrete
                 assunto = "Lembrete de Revisões - Sistema de Estudos"
 
-                base_url = os.getenv('BASE_URL', 'http://localhost:5000')
                 mensagem = f"""
                 <html>
                 <body>
@@ -128,10 +127,10 @@ class SistemaLembretes:
                         </li>
                     """
 
-                mensagem += f"""
+                mensagem += """
                     </ul>
                     <p>
-                        <a href="{base_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                        <a href="http://localhost:5000" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
                             Acessar Sistema
                         </a>
                     </p>
@@ -147,19 +146,15 @@ class SistemaLembretes:
                     print(f"Falha ao enviar lembrete para {nome}")
 
     def executar(self):
-        """Executa o sistema de lembretes em loop ou uma única vez (RUN_ONCE)"""
+        """Executa o sistema de lembretes em loop"""
         if not self.email_remetente or not self.senha_email:
             print("ERRO: Configurações de email não encontradas!")
-            print("Configure EMAIL_REMETENTE e SENHA_EMAIL nas variáveis de ambiente")
+            print("Configure EMAIL_REMETENTE e SENHA_EMAIL no arquivo .env")
             return
 
         print("Iniciando monitoramento de lembretes...")
 
         try:
-            run_once = os.getenv('RUN_ONCE', 'false').lower() in ('1', 'true', 'yes')
-            if run_once:
-                self.verificar_e_enviar_lembretes()
-                return
             while True:
                 self.verificar_e_enviar_lembretes()
                 time.sleep(self.intervalo_verificacao)
