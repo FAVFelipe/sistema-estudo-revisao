@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="{{ 'dark' if session.get('theme') == 'dark' else 'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM2track - Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --study-primary: #6366f1;
+            --study-success: #10b981;
+            --study-warning: #f59e0b;
+            --study-danger: #ef4444;
+            --study-info: #3b82f6;
+            --study-bg: #f8fafc;
+            --study-card: #ffffff;
+        }
+        
+        body {
+            background: var(--bs-body-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            color: var(--bs-body-color);
+        }
+        
+        .dashboard-card {
+            background: var(--bs-body-bg);
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .stat-card {
+            background: var(--bs-card-bg);
+            color: var(--bs-emphasis-color);
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--bs-border-color);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+        
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 0.25rem;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, var(--study-primary) 0%, #8b5cf6 100%);
+        }
+        
+        .performance-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .performance-excellent { background-color: var(--study-success); }
+        .performance-good { background-color: var(--study-info); }
+        .performance-average { background-color: var(--study-warning); }
+        .performance-poor { background-color: var(--study-danger); }
+        
+        .trend-up { color: var(--study-success); }
+        .trend-down { color: var(--study-danger); }
+        .trend-stable { color: var(--study-info); }
+
+        /* Ajustes específicos para dark mode */
+        [data-bs-theme="dark"] .dashboard-card {
+            box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+            border: 1px solid var(--bs-border-color);
+        }
+        [data-bs-theme="dark"] .nav-pills .nav-link.active {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-1">📊 Dashboard de Desempenho</h1>
+                        <p class="text-muted mb-0">Análise detalhada do seu progresso nos estudos</p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted me-3">
+                            <i class="bi bi-person-circle"></i> {{ session.get('usuario_nome', 'Usuário') }}
+                        </span>
+                        <a href="/" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-house"></i> Voltar ao Início
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas Principais -->
+        <div class="row mb-4">
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_estudos }}</div>
+                    <div class="stat-label">Total de Estudos</div>
+                    <div class="mt-2">
+                        <small><i class="bi bi-trending-up"></i> +{{ novos_estudos_7d }} esta semana</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ revisoes_concluidas }}</div>
+                    <div class="stat-label">Revisões Concluídas</div>
+                    <div class="mt-2">
+                        <small><i class="bi bi-check-circle"></i> {{ percentual_concluidas }}% do total</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ revisoes_pendentes }}</div>
+                    <div class="stat-label">Revisões Pendentes</div>
+                    <div class="mt-2">
+                        <small><i class="bi bi-clock"></i> {{ revisoes_urgentes }} urgentes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ dias_ativos }}</div>
+                    <div class="stat-label">Dias Ativos</div>
+                    <div class="mt-2">
+                        <small><i class="bi bi-calendar-check"></i> {{ ultima_atividade }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos e Análises -->
+        <div class="row">
+            <!-- Gráfico de Progresso -->
+            <div class="col-lg-8">
+                <div class="dashboard-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0">📈 Progresso das Revisões</h4>
+                        <div class="nav nav-pills" id="chartTabs" role="tablist">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#semanal">7 dias</button>
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#mensal">30 dias</button>
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#total">Total</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="semanal">
+                            <div class="chart-container">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="mensal">
+                            <div class="chart-container">
+                                <canvas id="progressChart30"></canvas>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="total">
+                            <div class="chart-container">
+                                <canvas id="progressChartTotal"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Análise por Matéria -->
+            <div class="col-lg-4">
+                <div class="dashboard-card p-4">
+                    <h4 class="mb-4">📚 Desempenho por Matéria</h4>
+                    <div id="materiasChart">
+                        {% for materia in materias_desempenho %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <div class="fw-semibold">{{ materia.nome }}</div>
+                                <div class="text-muted small">{{ materia.total_revisoes }} revisões</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold {{ 'text-success' if materia.percentual >= 80 else 'text-warning' if materia.percentual >= 60 else 'text-danger' }}">
+                                    {{ materia.percentual }}%
+                                </div>
+                                <div class="performance-indicator {{ 'performance-excellent' if materia.percentual >= 80 else 'performance-good' if materia.percentual >= 60 else 'performance-average' if materia.percentual >= 40 else 'performance-poor' }}"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análises Detalhadas -->
+        <div class="row mt-4">
+            <!-- Tendências -->
+            <div class="col-lg-6">
+                <div class="dashboard-card p-4">
+                    <h4 class="mb-4">📊 Tendências de Desempenho</h4>
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recomendações -->
+            <div class="col-lg-6">
+                <div class="dashboard-card p-4">
+                    <h4 class="mb-4">💡 Recomendações Inteligentes</h4>
+                    <div id="recomendacoes">
+                        {% for rec in recomendacoes %}
+                        <div class="alert alert-{{ rec.tipo }} d-flex align-items-start mb-3">
+                            <i class="bi bi-{{ rec.icone }} me-2 mt-1"></i>
+                            <div>
+                                <strong>{{ rec.titulo }}</strong>
+                                <p class="mb-0 small">{{ rec.descricao }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dados para os gráficos
+        const dadosProgresso = {
+            labels: {{ datas_progresso | tojson }},
+            datasets: [{
+                label: 'Revisões Concluídas',
+                data: {{ valores_progresso | tojson }},
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        const dadosProgresso30 = {
+            labels: {{ datas_progresso_30 | tojson }},
+            datasets: [{
+                label: 'Revisões Concluídas',
+                data: {{ valores_progresso_30 | tojson }},
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        const dadosTotal = {
+            labels: {{ datas_total | tojson }},
+            datasets: [{
+                label: 'Total Acumulado',
+                data: {{ valores_total | tojson }},
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        const dadosTendencias = {
+            labels: {{ labels_tendencias | tojson }},
+            datasets: [{
+                label: 'Desempenho',
+                data: {{ dados_tendencias | tojson }},
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4
+            }]
+        };
+
+        // Configurações dos gráficos
+        const configProgresso = {
+            type: 'line',
+            data: dadosProgresso,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        };
+
+        const configProgresso30 = {
+            type: 'line',
+            data: dadosProgresso30,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        };
+
+        const configTotal = {
+            type: 'line',
+            data: dadosTotal,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        };
+
+        const configTendencias = {
+            type: 'line',
+            data: dadosTendencias,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        };
+
+        // Criar gráficos
+        window.progressChart = new Chart(document.getElementById('progressChart'), configProgresso);
+        window.progressChart30 = new Chart(document.getElementById('progressChart30'), configProgresso30);
+        window.progressChartTotal = new Chart(document.getElementById('progressChartTotal'), configTotal);
+        window.trendsChart = new Chart(document.getElementById('trendsChart'), configTendencias);
+
+        // Atualizar dados em tempo real
+        function atualizarDashboard() {
+            fetch('/api/dashboard-data')
+                .then(response => response.json())
+                .then(data => {
+                    // Atualizar estatísticas
+                    const statNumbers = document.querySelectorAll('.stat-number');
+                    if (statNumbers.length >= 4) {
+                        statNumbers[0].textContent = data.total_estudos;
+                        statNumbers[1].textContent = data.revisoes_concluidas;
+                        statNumbers[2].textContent = data.revisoes_pendentes;
+                        statNumbers[3].textContent = data.dias_ativos;
+                    }
+
+                    // Atualizar percentual concluídas
+                    const percentualElem = document.querySelector('.stat-card:nth-child(2) small');
+                    if (percentualElem) {
+                        percentualElem.textContent = `\u2713 ${data.percentual_concluidas}% do total`;
+                    }
+
+                    // Atualizar novos estudos e revisões urgentes
+                    const novosEstudosElem = document.querySelector('.stat-card:nth-child(1) small');
+                    if (novosEstudosElem) {
+                        novosEstudosElem.textContent = `\u2191 +${data.novos_estudos_7d} esta semana`;
+                    }
+                    const revisoesUrgentesElem = document.querySelector('.stat-card:nth-child(3) small');
+                    if (revisoesUrgentesElem) {
+                        revisoesUrgentesElem.textContent = `\u23F0 ${data.revisoes_urgentes} urgentes`;
+                    }
+
+                    // Atualizar gráficos
+                    if (window.progressChart) {
+                        window.progressChart.data.labels = data.datas_progresso;
+                        window.progressChart.data.datasets[0].data = data.valores_progresso;
+                        window.progressChart.update();
+                    }
+                    if (window.progressChart30) {
+                        window.progressChart30.data.labels = data.datas_progresso_30;
+                        window.progressChart30.data.datasets[0].data = data.valores_progresso_30;
+                        window.progressChart30.update();
+                    }
+                    if (window.progressChartTotal) {
+                        window.progressChartTotal.data.labels = data.datas_total;
+                        window.progressChartTotal.data.datasets[0].data = data.valores_total;
+                        window.progressChartTotal.update();
+                    }
+                    if (window.trendsChart) {
+                        window.trendsChart.data.labels = data.labels_tendencias;
+                        window.trendsChart.data.datasets[0].data = data.dados_tendencias;
+                        window.trendsChart.update();
+                    }
+                });
+        }
+
+        // Atualizar a cada 10 segundos
+        setInterval(atualizarDashboard, 10000);
+    </script>
+</body>
+</html>

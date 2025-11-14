@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="{{ 'dark' if session.get('theme') == 'dark' else 'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="bi bi-gear"></i> Configurações</h1>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="post" action="{{ url_for('settings') }}" class="card p-3 shadow-sm">
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="preExamSwitch" name="pre_exam" {% if pre_exam %}checked{% endif %}>
+            <label class="form-check-label" for="preExamSwitch">
+                Ativar modo pré-prova
+            </label>
+        </div>
+
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="darkModeSwitch" name="dark_mode" {% if session.get('theme') == 'dark' %}checked{% endif %}>
+            <label class="form-check-label" for="darkModeSwitch">
+                Ativar Dark Mode
+            </label>
+        </div>
+
+        <div class="mb-3">
+            <label for="preExamFactor" class="form-label">Fator de redução do intervalo (0.4 – 0.8)</label>
+            <input type="range" class="form-range" min="0.4" max="0.8" step="0.05" id="preExamFactor" name="pre_exam_factor" value="{{ '%.2f' % pre_exam_factor }}">
+            <div class="d-flex justify-content-between small text-muted">
+                <span>0.4</span><span>0.5</span><span>0.6</span><span>0.7</span><span>0.8</span>
+            </div>
+            <div class="mt-2">
+                <span class="badge bg-info">Atual: <span id="factorLabel">{{ '%.2f' % pre_exam_factor }}</span></span>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Salvar
+            </button>
+        </div>
+    </form>
+</div>
+<script>
+const range = document.getElementById('preExamFactor');
+const label = document.getElementById('factorLabel');
+if (range && label) {
+  range.addEventListener('input', () => {
+    label.textContent = Number(range.value).toFixed(2);
+  });
+}
+</script>
+</body>
+</html>

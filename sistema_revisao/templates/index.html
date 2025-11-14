@@ -1,0 +1,357 @@
+ <!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="{{ 'dark' if session.get('theme') == 'dark' else 'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM2track</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --study-primary: var(--bs-primary);
+            --study-success: var(--bs-success);
+            --study-warning: var(--bs-warning);
+            --study-danger: var(--bs-danger);
+        }
+        body {
+            background: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .study-card {
+            background: var(--bs-card-bg, #1f2937);
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+            border-left: 4px solid var(--study-primary);
+        }
+        .study-card:hover { transform: translateY(-1px); }
+        .urgent-card { border-left-color: var(--study-danger); }
+        .warning-card { border-left-color: var(--study-warning); }
+        .btn-complete {
+            background: var(--bs-success);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-weight: 600;
+        }
+        .btn-complete:hover {
+            opacity: 0.95;
+        }
+        .btn-add { padding: 12px 20px; border-radius: 10px; font-weight: 600; }
+        .btn-add:hover {
+            opacity: 0.95;
+        }
+        .header-title { color: var(--bs-emphasis-color); font-weight: 700; font-size: 2.25rem; display: flex; align-items: center; gap: .5rem; line-height: 1.1; font-family: 'Orbitron', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing: .5px; }
+        .title-logo { width: 2.5em; height: 2.5em; object-fit: contain; margin-top: .05em; }
+        .badge-days {
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .badge-urgent { background-color: var(--study-danger); }
+        .badge-warning { background-color: var(--study-warning); }
+        .badge-success { background-color: var(--study-success); }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        .header-actions { display: flex; align-items: center; gap: .5rem; }
+        .header-actions .btn, .header-actions .text-muted { white-space: nowrap; }
+        .header-actions .btn { border-radius: 8px; }
+        /* Ajustes para dark mode */
+        [data-bs-theme="dark"] .study-card {
+            box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+            border: 1px solid var(--bs-border-color);
+        }
+        [data-bs-theme="dark"] .urgent-card,
+        [data-bs-theme="dark"] .warning-card {
+            background: var(--bs-card-bg);
+        }
+        /* Mobile first refinements */
+        @media (max-width: 576px) {
+            .header-title { font-size: 1.50rem; }
+            .title-logo { width: 1.3em; height: 1.3em; margin-top: .04em; }
+            .container { padding-left: 1rem; padding-right: 1rem; }
+            .header-actions { flex-direction: column; align-items: stretch; gap: .5rem; }
+            .header-actions .text-muted { display: block; margin-bottom: .25rem; white-space: normal; font-size: .95rem; }
+            .header-actions .btn { width: 100%; padding: .6rem .9rem; font-size: .95rem; }
+            .btn-add { width: 100%; padding: 14px 18px; font-size: 1rem; border-radius: 10px; }
+            .study-card { border-radius: 10px; border-left-width: 3px; }
+            .card .card-body { padding: 1rem; }
+            .badge { font-size: .8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="header-title mb-2">
+                    SM2track
+                </h1>
+                <p class="text-muted mb-0">Olá, <strong>{{ session.get('usuario_nome', 'Usuário') }}</strong>!</p>
+                {% if pre_exam %}
+                <div class="mt-2">
+                    <span class="badge bg-danger">
+                        <i class="bi bi-lightning-charge-fill"></i> Pré-prova: Ativo
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="header-actions">
+                <span class="text-muted me-3">
+                    <i class="bi bi-envelope"></i> {{ session.get('usuario_email', '') }}
+                </span>
+                <a href="{{ url_for('settings') }}" class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="bi bi-gear"></i> Configurações
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm me-2">
+                    <i class="bi bi-graph-up"></i> Dashboard
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Sair
+                </a>
+            </div>
+        </div>
+
+        <!-- Botão principal no topo -->
+        <div class="mb-3">
+            <a class="btn btn-add btn-primary text-white w-100 w-md-auto" href="{{ url_for('cadastrar') }}">
+                <i class="bi bi-plus-circle-fill me-2"></i> Cadastrar Novo Estudo
+            </a>
+        </div>
+
+        <!-- Revisões Urgentes -->
+        {% if urgentes %}
+        <h3 class="text-danger mb-3">
+            <i class="bi bi-exclamation-triangle-fill"></i> Revisões Urgentes
+        </h3>
+        {% for rev in urgentes %}
+        <div class="card study-card urgent-card mb-3" data-revisao-id="{{ rev[0] }}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8 col-sm-12 mb-2 mb-md-0">
+                        <h5 class="card-title mb-0 fw-bold">{{ rev[1] }}</h5>
+                        <p class="card-text text-muted mb-1">{{ rev[2] }} - {{ rev[3] }}</p>
+                        {% if rev[5] == 'flashcard' %}
+                        <div class="mt-2">
+                            <div class="fw-semibold">Pergunta:</div>
+                            <div class="text-body">{{ rev[6] }}</div>
+                            <button class="btn btn-primary btn-lg mt-2 w-100 btn-show-answer" type="button" data-bs-toggle="collapse" data-bs-target="#resp-urg-{{ rev[0] }}" aria-expanded="false" aria-controls="resp-urg-{{ rev[0] }}" data-revisao-id="{{ rev[0] }}">
+                                <i class="bi bi-eye"></i> Mostrar resposta
+                            </button>
+                            <div class="collapse mt-2" id="resp-urg-{{ rev[0] }}">
+                                <div class="card card-body p-2">
+                                    <div class="fw-semibold">Resposta:</div>
+                                    <div class="text-body">{{ rev[7] }}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-outline-danger w-50 btn-flash-suggest" type="button" data-revisao-id="{{ rev[0] }}" data-quality="0">
+                                    <i class="bi bi-x-circle"></i> Errei
+                                </button>
+                                <button class="btn btn-outline-success w-50 btn-flash-suggest" type="button" data-revisao-id="{{ rev[0] }}" data-quality="4">
+                                    <i class="bi bi-check-circle"></i> Acertei
+                                </button>
+                            </div>
+                        </div>
+                        {% elif rev[5] == 'quiz' and rev[8] %}
+                        {% set group_id = 'quiz-urg-' ~ rev[0] %}
+                        <div class="mt-2">
+                            <div class="fw-semibold">Pergunta (Quiz):</div>
+                            <div class="text-body">{{ rev[6] }}</div>
+                            <div id="{{ group_id }}" class="d-grid gap-2 mt-2">
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="A" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">A) {{ rev[8]['A'] }}</button>
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="B" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">B) {{ rev[8]['B'] }}</button>
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="C" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">C) {{ rev[8]['C'] }}</button>
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="D" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">D) {{ rev[8]['D'] }}</button>
+                            </div>
+                            <div id="{{ group_id }}-fb" class="mt-2"></div>
+                        </div>
+                        {% endif %}
+                        {% if rev[4] < 0 %}
+                        <span class="badge badge-urgent text-white">
+                            <i class="bi bi-clock"></i> Atrasado há {{ -rev[4] }} dias
+                        </span>
+                        {% else %}
+                        <span class="badge badge-urgent text-white">
+                            <i class="bi bi-clock"></i> Vence hoje!
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 col-sm-12 text-md-end">
+                        {% if rev[5] == 'flashcard' %}
+                        <button type="button" class="btn btn-complete btn-success text-white w-100 btn-lg btn-marcar" data-revisao-id="{{ rev[0] }}" data-modo="flashcard">
+                            <i class="bi bi-check-circle-fill me-2"></i> Marcar como Feita
+                        </button>
+                        {% elif rev[5] == 'quiz' %}
+                        <button type="button" class="btn btn-complete btn-success text-white w-100 btn-lg btn-marcar" data-revisao-id="{{ rev[0] }}" data-modo="quiz">
+                            <i class="bi bi-check-circle-fill me-2"></i> Marcar como Feita
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-complete btn-success text-white w-100 btn-lg btn-marcar" data-revisao-id="{{ rev[0] }}" data-modo="simples">
+                            <i class="bi bi-check-circle-fill me-2"></i> Marcar como Feita
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Revisões Próximas -->
+        {% if proximas %}
+        <h3 class="text-warning mb-3">
+            <i class="bi bi-hourglass-split"></i> Próximas Revisões
+        </h3>
+        {% for rev in proximas %}
+        <div class="card study-card warning-card mb-3" data-revisao-id="{{ rev[0] }}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8 col-sm-12 mb-2 mb-md-0">
+                        <h5 class="card-title mb-0 fw-bold">{{ rev[1] }}</h5>
+                        <p class="card-text text-muted mb-1">{{ rev[2] }} - {{ rev[3] }}</p>
+                        {% if rev[5] == 'flashcard' %}
+                        <div class="mt-2">
+                            <div class="fw-semibold">Pergunta:</div>
+                            <div class="text-body">{{ rev[6] }}</div>
+                            <button class="btn btn-primary btn-lg mt-2 w-100 btn-show-answer" type="button" data-bs-toggle="collapse" data-bs-target="#resp-prox-{{ rev[0] }}" aria-expanded="false" aria-controls="resp-prox-{{ rev[0] }}" data-revisao-id="{{ rev[0] }}">
+                                <i class="bi bi-eye"></i> Mostrar resposta
+                            </button>
+                            <div class="collapse mt-2" id="resp-prox-{{ rev[0] }}">
+                                <div class="card card-body p-2">
+                                    <div class="fw-semibold">Resposta:</div>
+                                    <div class="text-body">{{ rev[7] }}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-outline-danger w-50 btn-flash-suggest" type="button" data-revisao-id="{{ rev[0] }}" data-quality="0">
+                                    <i class="bi bi-x-circle"></i> Errei
+                                </button>
+                                <button class="btn btn-outline-success w-50 btn-flash-suggest" type="button" data-revisao-id="{{ rev[0] }}" data-quality="4">
+                                    <i class="bi bi-check-circle"></i> Acertei
+                                </button>
+                            </div>
+                        </div>
+                        {% elif rev[5] == 'quiz' and rev[8] %}
+                        {% set group_id = 'quiz-prox-' ~ rev[0] %}
+                        <div class="mt-2">
+                            <div class="fw-semibold">Pergunta (Quiz):</div>
+                            <div class="text-body">{{ rev[6] }}</div>
+                            <div id="{{ group_id }}" class="d-grid gap-2 mt-2">
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="A" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">A) {{ rev[8]['A'] }}</button>
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="B" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">B) {{ rev[8]['B'] }}</button>
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="C" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">C) {{ rev[8]['C'] }}</button>
+                                <button class="btn btn-outline-secondary btn-quiz" data-alt="D" type="button" data-revisao-id="{{ rev[0] }}" data-correta='{{ rev[7]|tojson }}' data-group-id="{{ group_id }}">D) {{ rev[8]['D'] }}</button>
+                            </div>
+                            <div id="{{ group_id }}-fb" class="mt-2"></div>
+                        </div>
+                        {% endif %}
+                        <span class="badge badge-warning text-white">
+                            <i class="bi bi-calendar"></i> {{ rev[4] }} dias restantes
+                        </span>
+                    </div>
+                    <div class="col-md-4 col-sm-12 text-md-end">
+                        {% if rev[5] == 'flashcard' %}
+                        <button type="button" class="btn btn-complete btn-success text-white w-100 btn-marcar" data-revisao-id="{{ rev[0] }}" data-modo="flashcard">
+                            <i class="bi bi-check-circle-fill me-2"></i> Marcar como Feita
+                        </button>
+                        {% elif rev[5] == 'quiz' %}
+                        <button type="button" class="btn btn-complete btn-success text-white w-100 btn-marcar" data-revisao-id="{{ rev[0] }}" data-modo="quiz">
+                            <i class="bi bi-check-circle-fill me-2"></i> Marcar como Feita
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-complete btn-success text-white w-100 btn-marcar" data-revisao-id="{{ rev[0] }}" data-modo="simples">
+                            <i class="bi bi-check-circle-fill me-2"></i> Marcar como Feita
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        
+    </div>
+    <!-- Modal de avaliação de desempenho -->
+<div class="modal fade" id="modalAvaliacao" tabindex="-1" aria-labelledby="modalAvaliacaoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAvaliacaoLabel">
+                    <i class="bi bi-star-fill"></i> Como foi sua revisão?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Avalie seu desempenho para ajustar o cronograma:</p>
+                <!-- Sugestão vinda dos botões Acertou/Errou -->
+                <div id="suggestionBox" class="alert alert-warning py-2 px-3 mb-3" style="display:none;">
+                    <small><i class="bi bi-lightbulb"></i> <span id="suggestionText"></span></small>
+                </div>
+                
+                <!-- Opções de qualidade -->
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-danger btn-lg quality-btn" data-quality="0">
+                        <i class="bi bi-x-circle"></i> Não lembrei (0)
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-lg quality-btn" data-quality="3">
+                        <i class="bi bi-dash-circle"></i> Lembrei com dificuldade (3)
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-lg quality-btn" data-quality="4">
+                        <i class="bi bi-check-circle"></i> Lembrei bem (4)
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-lg quality-btn" data-quality="5">
+                        <i class="bi bi-star-fill"></i> Lembrei perfeitamente (5)
+                    </button>
+                </div>
+                
+                <!-- Nível de confiança -->
+                <div class="mt-4">
+                    <label for="inputConfianca" class="form-label fw-semibold">
+                        Nível de confiança: <span id="labelConfianca" class="badge bg-secondary">3</span>
+                    </label>
+                    <input type="range" class="form-range" min="1" max="5" step="1" value="3" id="inputConfianca">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3 mb-0">
+                    <small>
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Dica:</strong> Seja honesto! O sistema ajustará automaticamente o intervalo das próximas revisões.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
